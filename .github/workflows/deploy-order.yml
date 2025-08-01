@@ -1,56 +1,78 @@
-name: order-service ci cd flow
+name: order-service CI/CD Flow
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  SI_CLUSTER: lugx-cluster
-  SI_ZONE: us-central1-a
+  CLUSTER_NAME: lugx-cluster
+  CLUSTER_REGION: us-central1
   DEPLOYMENT_NAME: order-service
   IMAGE: order-service
   TAG: prod
+  REPO_NAME: lugx-repo
 
 jobs:
-  setup-build-publish-deploy:
+  deploy-order-service:
+    name: Build & Deploy Order Service to GKE
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - name: 🔄 Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v1
+      - name: ☕ Set up JDK 21
+        uses: actions/setup-java@v3
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
 
-      - name: Build with Maven
+      - name: 🛠️ Build the Service with Maven
         run: mvn clean install -DskipTests
 
-      - name: Setup Google Cloud CLI
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@0.1.3
+      - name: 🔐 Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
         with:
-          service_account_key: ${{ secrets.GKE_SA_KEY }}
+          credentials_json: '${{ secrets.GKE_SA_KEY }}'
+
+      - name: ⚙️ Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
           project_id: ${{ secrets.GKE_PROJECT }}
 
-      - name: Configure Docker Auth
-        run: gcloud --quiet auth configure-docker
+      - name: 🔌 Install GKE Auth Plugin
+        run: gcloud components install gke-gcloud-auth-plugin --quiet
 
-      - name: Get GKE Cluster Credentials
-        run: gcloud container clusters get-credentials "$SI_CLUSTER" --zone "$SI_ZONE"
+      - name: 🐳 Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
-      - name: Build Docker Image
-        run: docker build -t gcr.io/$PROJECT_ID/$IMAGE:$TAG .
-
-      - name: Push Docker Image
-        run: docker push gcr.io/$PROJECT_ID/$IMAGE:$TAG
-
-      - name: Deploy to GKE
+      - name: 🏗️ Build Docker Image
         run: |
-          kubectl apply -f order-service.yaml
-          kubectl apply -f order-service-deployment.yaml
+          IMAGE_URI="us-central1-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE:$TAG"
+          docker build -t $IMAGE_URI .
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: 🚀 Push Docker Image to Artifact Registry
+        run: docker push ${{ env.IMAGE_URI }}
+
+      - name: 🔑 Get GKE Cluster Credentials
+        run: |
+          gcloud container clusters get-credentials "$CLUSTER_NAME" \
+            --region "$CLUSTER_REGION" \
+            --project "$PROJECT_ID"
+
+      - name: 📦 Deploy Order Service
+        run: |
+          kubectl apply -f k8s/order-service.yaml
+          kubectl apply -f k8s/order-service-deployment.yaml
           kubectl rollout restart deployment $DEPLOYMENT_NAME
+
+      - name: ✅ Wait for Rollout
+        run: kubectl rollout status deployment/$DEPLOYMENT_NAME --timeout=60s
+
+      - name: 🔍 Check Service Status
+        run: kubectl get svc,pods -o wide
