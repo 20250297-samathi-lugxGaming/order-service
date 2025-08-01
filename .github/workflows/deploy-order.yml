@@ -65,10 +65,13 @@ jobs:
             --region "$CLUSTER_REGION" \
             --project "$PROJECT_ID"
 
-      - name: 📦 Deploy Order Service
+      - name: 🧱 Deploy MySQL & Order Service
         run: |
-          kubectl apply -f k8s/order-service.yaml
-          kubectl apply -f k8s/order-service-deployment.yaml
+          kubectl apply --validate=false -f k8s/db-data-persistentvolumeclaim.yaml
+          kubectl apply --validate=false -f k8s/mysql-service.yaml
+          kubectl apply --validate=false -f k8s/mysql-deployment.yaml
+          kubectl apply --validate=false -f k8s/order-service-service.yaml
+          kubectl apply --validate=false -f k8s/order-service-deployment.yaml
           kubectl rollout restart deployment $DEPLOYMENT_NAME
 
       - name: ✅ Wait for Rollout
