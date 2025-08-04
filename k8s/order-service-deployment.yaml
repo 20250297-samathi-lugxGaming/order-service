@@ -28,7 +28,7 @@ spec:
               value: jdbc:mysql://mysql:3307/lugx_db
             - name: SPRING_DATASOURCE_USERNAME
               value: root
-          image: samathikisalka/order-service:latest
+          image: us-central1-docker.pkg.dev/samathi-lugxgaming/lugx-repo/order-service:prod
           name: order-service
           imagePullPolicy: Always
           ports:
