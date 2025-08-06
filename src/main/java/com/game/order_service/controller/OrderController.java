@@ -1,97 +1,103 @@
-package com.game.order_service.controller;
+package com.order.orderservice.controller;
 
-import com.game.order_service.dto.OrderItemDTO;
-import com.game.order_service.dto.OrderRequest;
-import com.game.order_service.model.Order;
-import com.game.order_service.model.OrderItem;
-import com.game.order_service.repository.OrderRepository;
+import com.order.orderservice.dto.CreateOrderRequest;
+import com.order.orderservice.model.Order;
+import com.order.orderservice.model.OrderItem;
+import com.order.orderservice.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
     @Autowired
-    private OrderRepository repo;
+    private OrderRepository orderRepository;
 
-    @Autowired
-    private RestTemplate restTemplate;
-
-    // ✅ CREATE order using OrderRequest with game price lookup
-    @PostMapping
-    public ResponseEntity<String> createOrder(@RequestBody OrderRequest request) {
-        BigDecimal total = BigDecimal.ZERO;
-        List<OrderItem> orderItems = new ArrayList<>();
-
-        for (OrderItemDTO dto : request.getItems()) {
-            // Call GameService to get game details
-            String url = "http://game-service:8086/api/games/" + dto.getGameId();
-            ResponseEntity<Game> gameResponse = restTemplate.getForEntity(url, Game.class);
-
-            if (!gameResponse.getStatusCode().is2xxSuccessful() || gameResponse.getBody() == null) {
-                return ResponseEntity.badRequest().body("Invalid game ID: " + dto.getGameId());
-            }
-
-            Game game = gameResponse.getBody();
-            BigDecimal unitPrice = BigDecimal.valueOf(game.getPrice());
-            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(dto.getQuantity()));
-            total = total.add(lineTotal);
-
-            OrderItem item = new OrderItem();
-            item.setGameId(game.getId());
-            item.setGameName(game.getName());
-            item.setQuantity(dto.getQuantity());
-            item.setUnitPrice(unitPrice);
-            orderItems.add(item);
+    // Mock game service response (replace with real HTTP call if needed)
+    private Map<Long, Game> fetchGameDetails(List<Long> gameIds) {
+        Map<Long, Game> mockGames = new HashMap<>();
+        for (Long id : gameIds) {
+            mockGames.put(id, new Game(id, "Game " + id, "Shooter", "2025-01-01", 49.99));
         }
+        return mockGames;
+    }
+
+    @PostMapping
+    public ResponseEntity<Order> createOrder(@RequestBody CreateOrderRequest request) {
+        Map<Long, Game> games = fetchGameDetails(request.getItems().stream()
+                .map(CreateOrderRequest.OrderItemRequest::getGameId).toList());
 
         Order order = new Order();
         order.setCustomerName(request.getCustomerName());
-        order.setTotalPrice(total);
+        order.setOrderDate(LocalDateTime.now());
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        double total = 0.0;
+
+        for (CreateOrderRequest.OrderItemRequest item : request.getItems()) {
+            Game game = games.get(item.getGameId());
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setGameId(game.getId());
+            orderItem.setGameName(game.getName());
+            orderItem.setGamePrice(game.getPrice());
+            orderItem.setQuantity(item.getQuantity());
+            orderItem.setOrder(order);
+
+            orderItems.add(orderItem);
+            total += game.getPrice() * item.getQuantity();
+        }
+
         order.setItems(orderItems);
-        orderItems.forEach(i -> i.setOrder(order));
+        order.setTotalPrice(total);
+        Order saved = orderRepository.save(order);
 
-        repo.save(order);
-
-        return ResponseEntity.ok("Order created. Total = $" + total);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    // ✅ GET all orders with items
     @GetMapping
     public List<Order> getAllOrders() {
-        return repo.findAll();
+        return orderRepository.findAll();
     }
 
-    // ✅ GET single order by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
-        return repo.findById(id)
+    public ResponseEntity<Order> getOrder(@PathVariable Long id) {
+        return orderRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ✅ DELETE order by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteOrder(@PathVariable Long id) {
-        if (!repo.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        repo.deleteById(id);
-        return ResponseEntity.ok("Order deleted.");
+    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+        orderRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
-    // Helper DTO for game info
+    @GetMapping("/customer/{name}")
+    public List<Order> getOrdersByCustomer(@PathVariable String name) {
+        return orderRepository.findByCustomerName(name);
+    }
+
+    // Inner class to simulate Game Service
     private static class Game {
         private Long id;
         private String name;
+        private String category;
+        private String releaseDate;
         private Double price;
+
+        public Game(Long id, String name, String category, String releaseDate, Double price) {
+            this.id = id;
+            this.name = name;
+            this.category = category;
+            this.releaseDate = releaseDate;
+            this.price = price;
+        }
 
         public Long getId() { return id; }
         public String getName() { return name; }
