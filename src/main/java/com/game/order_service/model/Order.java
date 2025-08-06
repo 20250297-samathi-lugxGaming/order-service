@@ -11,15 +11,12 @@ public class Order {
     private Long orderId;
 
     private String customerName;
-
     private LocalDateTime orderDate;
-
     private Double totalPrice;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> items;
 
-    // Getters and Setters
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
 
