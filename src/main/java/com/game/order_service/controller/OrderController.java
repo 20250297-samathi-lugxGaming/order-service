@@ -1,9 +1,9 @@
-package com.order.orderservice.controller;
+package com.game.order_service.controller;
 
-import com.order.orderservice.dto.CreateOrderRequest;
-import com.order.orderservice.model.Order;
-import com.order.orderservice.model.OrderItem;
-import com.order.orderservice.repository.OrderRepository;
+import com.game.order_service.dto.CreateOrderRequest;
+import com.game.order_service.model.Order;
+import com.game.order_service.model.OrderItem;
+import com.game.order_service.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
