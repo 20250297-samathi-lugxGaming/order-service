@@ -1,7 +1,10 @@
-package com.game.order_service.repository;
+package com.order.orderservice.repository;
 
-import com.game.order_service.model.Order;
+import com.order.orderservice.model.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface OrderRepository extends JpaRepository <Order,Long> {
+import java.util.List;
+
+public interface OrderRepository extends JpaRepository<Order, Long> {
+    List<Order> findByCustomerName(String customerName);
 }
