@@ -1,4 +1,4 @@
-package com.order.orderservice.model;
+package com.game.orderservice.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
