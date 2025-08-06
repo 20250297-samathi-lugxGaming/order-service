@@ -1,7 +1,6 @@
-package com.game.order_service.model;
+package com.order.orderservice.model;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal;
 
 @Entity
 public class OrderItem {
@@ -11,8 +10,8 @@ public class OrderItem {
 
     private Long gameId;
     private String gameName;
-    private int quantity;
-    private BigDecimal unitPrice;
+    private Double gamePrice;
+    private Integer quantity;
 
     @ManyToOne
     @JoinColumn(name = "order_id")
@@ -20,16 +19,20 @@ public class OrderItem {
 
     // Getters and Setters
     public Long getId() { return id; }
-    public Long getGameId() { return gameId; }
-    public String getGameName() { return gameName; }
-    public int getQuantity() { return quantity; }
-    public BigDecimal getUnitPrice() { return unitPrice; }
-    public Order getOrder() { return order; }
-
     public void setId(Long id) { this.id = id; }
+
+    public Long getGameId() { return gameId; }
     public void setGameId(Long gameId) { this.gameId = gameId; }
+
+    public String getGameName() { return gameName; }
     public void setGameName(String gameName) { this.gameName = gameName; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+
+    public Double getGamePrice() { return gamePrice; }
+    public void setGamePrice(Double gamePrice) { this.gamePrice = gamePrice; }
+
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+    public Order getOrder() { return order; }
     public void setOrder(Order order) { this.order = order; }
 }
