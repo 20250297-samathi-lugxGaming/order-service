@@ -13,8 +13,9 @@ public class OrderItem {
     private Double gamePrice;
     private Integer quantity;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id")
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id") // this must match column in DB
     private Order order;
 
     public Long getId() { return id; }
