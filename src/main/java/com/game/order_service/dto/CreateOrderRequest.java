@@ -1,4 +1,4 @@
-package com.game.orderservice.dto;
+package com.game.order_service.dto;
 
 import java.util.List;
 
