@@ -1,5 +1,5 @@
 package com.game.order_service.model;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -15,9 +15,10 @@ public class OrderItem {
     private Double gamePrice;
     private Integer quantity;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id") // ✅ Must match 'order_id' column in order_item table
-    private Order order;
+  @ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "order_id")
+@JsonIgnore 
+private Order order;
 
     // Getters and setters
 
