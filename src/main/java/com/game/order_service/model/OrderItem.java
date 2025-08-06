@@ -17,7 +17,6 @@ public class OrderItem {
     @JoinColumn(name = "order_id")
     private Order order;
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
